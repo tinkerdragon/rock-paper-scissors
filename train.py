@@ -11,7 +11,7 @@ import timm
 from sklearn.metrics import accuracy_score
 
 # Define constants
-NUM_CLASSES = 3  # Rock, Paper, Scissors
+NUM_CLASSES = 3
 IMG_SIZE = 224
 BATCH_SIZE = 32
 EPOCHS = 10
