@@ -1,4 +1,3 @@
-
 import os
 import random
 import shutil
@@ -14,7 +13,7 @@ from sklearn.metrics import accuracy_score
 NUM_CLASSES = 3
 IMG_SIZE = 224
 BATCH_SIZE = 32
-EPOCHS = 3
+EPOCHS = 10
 LEARNING_RATE = 0.001
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DATA_DIR = '/Users/mom/Documents/data'
@@ -64,10 +63,14 @@ def prepare_dataset():
 
     print("Dataset copied and split into 'data/train', 'data/val', and 'data/test'.")
 
-# Data transformations
+# Data transformations with more augmentations
 train_transform = transforms.Compose([
     transforms.Resize((IMG_SIZE, IMG_SIZE)),
     transforms.RandomHorizontalFlip(),
+    transforms.RandomVerticalFlip(),
+    transforms.RandomRotation(20),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+    transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
@@ -95,8 +98,8 @@ def main():
     # Class names
     class_names = train_dataset.classes  # ['paper', 'rock', 'scissors'] (order may vary)
 
-    # Load pre-trained EfficientNet-B0
-    model = timm.create_model('efficientnet_b0', pretrained=True, num_classes=NUM_CLASSES)
+    # Load EfficientNet-B0 from scratch (no pretrained weights)
+    model = timm.create_model('efficientnet_b0', pretrained=False, num_classes=NUM_CLASSES)
     model = model.to(DEVICE)
 
     # Loss and optimizer

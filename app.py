@@ -1,9 +1,7 @@
-
 import sys
 import random
 import cv2
 import torch
-import torch.nn as nn
 import timm
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QPushButton, QHBoxLayout
 from PyQt6.QtCore import QTimer
@@ -18,20 +16,8 @@ CLASS_NAMES = ['paper', 'rock', 'scissors']  # Adjust based on your training ord
 MODEL_PATH = 'rps_model.pth'  # Path to the imported weights (.pth file)
 
 # Load the trained model from .pth file
-class RPSModel(nn.Module):
-    def __init__(self):
-        super(RPSModel, self).__init__()
-        self.model = timm.create_model('efficientnet_b0', pretrained=False, num_classes=NUM_CLASSES)
-
-    def forward(self, x):
-        return self.model(x)
-
-model = RPSModel()
-try:
-    model.load_state_dict(torch.load(MODEL_PATH, weights_only=True))
-except FileNotFoundError:
-    print(f"Error: Model file '{MODEL_PATH}' not found. Please ensure it exists.")
-    sys.exit(1)
+model = timm.create_model('efficientnet_b0', pretrained=False, num_classes=NUM_CLASSES)
+model.load_state_dict(torch.load(MODEL_PATH))
 model = model.to(DEVICE)
 model.eval()
 
@@ -112,6 +98,10 @@ class RPSApp(QMainWindow):
         self.timer.timeout.connect(self.update_frame)
         self.is_running = False
         self.current_mode = None  # 'game' or 'test'
+        self.round_pause = False
+        self.pause_timer = QTimer()
+        self.pause_timer.setSingleShot(True)
+        self.pause_timer.timeout.connect(self.end_pause)
 
         # Initial UI state
         self.set_mode("game")  # Start in game mode by default
@@ -151,32 +141,47 @@ class RPSApp(QMainWindow):
             self.result_label.setText("Result: Waiting...")
 
     def update_frame(self):
+        if self.round_pause:
+            # During pause, just update the video feed, don't play a round
+            ret, frame = self.cap.read()
+            if ret:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                height, width, channel = frame.shape
+                bytes_per_line = 3 * width
+                q_img = QImage(frame.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
+                self.video_label.setPixmap(QPixmap.fromImage(q_img))
+            return
+
         ret, frame = self.cap.read()
         if ret:
-            # Predict gesture
             user_choice = predict_gesture(frame)
 
             if self.current_mode == "game":
-                # Bot chooses randomly
                 bot_choice = random.choice(CLASS_NAMES)
-
-                # Determine winner
                 result = determine_winner(user_choice, bot_choice)
-
-                # Update labels
                 self.user_label.setText(f"Your choice: {user_choice}")
                 self.bot_label.setText(f"Bot choice: {bot_choice}")
                 self.result_label.setText(f"Result: {result}")
+
+                # Start pause between rounds (e.g., 2 seconds)
+                self.round_pause = True
+                self.pause_timer.start(2000)  # 2000 ms = 2 seconds
+
             elif self.current_mode == "test":
-                # Just show prediction
                 self.prediction_label.setText(f"Predicted gesture: {user_choice}")
 
-            # Display frame
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             height, width, channel = frame.shape
             bytes_per_line = 3 * width
             q_img = QImage(frame.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
             self.video_label.setPixmap(QPixmap.fromImage(q_img))
+
+    def end_pause(self):
+        # Reset for next round
+        self.round_pause = False
+        self.user_label.setText("Your choice: Waiting...")
+        self.bot_label.setText("Bot choice: Waiting...")
+        self.result_label.setText("Result: Waiting...")
 
     def closeEvent(self, event):
         self.cap.release()
