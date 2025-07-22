@@ -100,6 +100,11 @@ pydeck==0.9.1
 Pygments==2.19.2
 pyobjc-core==11.1
 pyobjc-framework-Cocoa==11.1
+PyQt5-Qt5==5.15.17
+PyQt5_sip==12.17.0
+PyQt6==6.9.1
+PyQt6-Qt6==6.9.1
+PyQt6_sip==13.10.2
 PySocks==1.7.1
 python-dateutil==2.9.0.post0
 python-json-logger==2.0.7
