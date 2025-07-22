@@ -14,7 +14,7 @@ from sklearn.metrics import accuracy_score
 NUM_CLASSES = 3
 IMG_SIZE = 224
 BATCH_SIZE = 32
-EPOCHS = 10
+EPOCHS = 3
 LEARNING_RATE = 0.001
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DATA_DIR = '/Users/mom/Documents/data'
